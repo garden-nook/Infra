@@ -1,6 +1,6 @@
 services:
   stage-backend:
-    image: registry.codelab.tpu.ru/garden-nook/back:${IMAGE_TAG:-stage-latest}
+    image: elecshen/back:${IMAGE_TAG:-stage-latest}
     container_name: stage-backend
     restart: unless-stopped
     environment:
@@ -34,7 +34,7 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
     volumes:
-      - /opt/garden-nook/stage/db-data:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql/data
     networks:
       - stage-network
     healthcheck:
@@ -51,7 +51,7 @@ services:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
     volumes:
-      - /opt/garden-nook/stage/pgadmin-data:/var/lib/pgadmin
+      - pgadmin:/var/lib/pgadmin
     networks:
       - stage-network
 
@@ -59,3 +59,7 @@ networks:
   stage-network:
     name: stage-network
     driver: bridge
+
+volumes:
+  postgres:
+  pgadmin:

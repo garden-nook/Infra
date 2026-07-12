@@ -1,6 +1,6 @@
 services:
   dev-backend:
-    image: registry.codelab.tpu.ru/garden-nook/back:${IMAGE_TAG:-dev-latest}
+    image: elecshen/back:${IMAGE_TAG:-dev-latest}
     container_name: dev-backend
     restart: unless-stopped
     environment:
@@ -34,7 +34,7 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
     volumes:
-      - /opt/garden-nook/dev/db-data:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql/data
     networks:
       - dev-network
     healthcheck:
@@ -51,7 +51,7 @@ services:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
     volumes:
-      - /opt/garden-nook/dev/pgadmin-data:/var/lib/pgadmin
+      - pgadmin:/var/lib/pgadmin
     networks:
       - dev-network
 
@@ -59,3 +59,7 @@ networks:
   dev-network:
     name: dev-network
     driver: bridge
+
+volumes:
+  postgres:
+  pgadmin:

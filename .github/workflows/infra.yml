@@ -1,0 +1,148 @@
+name: Infrastructure CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'nginx/**'
+      - 'docker/nginx/**'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'What to deploy'
+        required: true
+        type: choice
+        options:
+          - dev-infra
+          - stage-infra
+          - certs
+
+jobs:
+  validate-nginx:
+    name: Validate Nginx Config
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test nginx configuration
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/nginx/nginx.conf:/etc/nginx/nginx.conf:ro \
+            -v ${{ github.workspace }}/nginx/conf.d:/etc/nginx/conf.d:ro \
+            nginx:1.25-alpine \
+            nginx -t
+
+  deploy-nginx:
+    name: Deploy Nginx Config
+    runs-on: ubuntu-latest
+    needs: validate-nginx
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: nginx
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync nginx configs to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.VPS_HOST }}
+          username: ${{ vars.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "nginx/*,docker/nginx/docker-compose.yml"
+          target: "/opt/garden-nook/"
+          strip_components: 0
+
+      - name: Reload nginx
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.VPS_HOST }}
+          username: ${{ vars.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker exec nginx nginx -t && docker exec nginx nginx -s reload
+            echo "Nginx config reloaded"
+
+  renew-certificates:
+    name: Renew SSL Certificates
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: certificates
+    
+    steps:
+      - name: Run cert renewal on VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.VPS_HOST }}
+          username: ${{ vars.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            VPS_IP=${{ vars.VPS_HOST }} \
+            CERT_EMAIL=noreply@localhost.local \
+            /opt/garden-nook/scripts/issue-certs.sh
+
+  deploy-dev-infra:
+    name: Deploy DEV Infrastructure
+    runs-on: ubuntu-latest
+    needs: validate-nginx
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: dev-infra
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync dev configs
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.VPS_HOST }}
+          username: ${{ vars.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker/dev/*"
+          target: "/opt/garden-nook/docker/dev/"
+          strip_components: 2
+
+      - name: Restart dev services
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.VPS_HOST }}
+          username: ${{ vars.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/garden-nook/docker/dev
+            docker compose up -d --remove-orphans
+            echo "DEV infra deployed"
+
+  deploy-stage-infra:
+    name: Deploy STAGE Infrastructure
+    runs-on: ubuntu-latest
+    needs: validate-nginx
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: stage-infra
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync stage configs
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.VPS_HOST }}
+          username: ${{ vars.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker/stage/*"
+          target: "/opt/garden-nook/docker/stage/"
+          strip_components: 2
+
+      - name: Restart stage services
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.VPS_HOST }}
+          username: ${{ vars.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/garden-nook/docker/stage
+            docker compose up -d --remove-orphans
+            echo "STAGE infra deployed"
