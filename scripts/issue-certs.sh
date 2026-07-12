@@ -3,7 +3,7 @@ set -e
 
 VPS_IP="${VPS_IP:-192.144.12.78}"
 IP_DASHED="${VPS_IP//./-}"
-EMAIL="${CERT_EMAIL:-noreply@localhost.local}"
+EMAIL="${CERT_EMAIL:-noreply@localhost.org}"
 
 DEV_DOMAINS=(
   "dev.${IP_DASHED}.nip.io"
