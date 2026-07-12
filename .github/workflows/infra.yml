@@ -1,11 +1,6 @@
 name: Infrastructure CI/CD
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'nginx/**'
-      - 'docker/nginx/**'
   workflow_dispatch:
     inputs:
       target:
@@ -13,6 +8,7 @@ on:
         required: true
         type: choice
         options:
+          - nginx
           - dev-infra
           - stage-infra
           - certs
@@ -21,7 +17,7 @@ jobs:
   deploy-nginx:
     name: Deploy Nginx Config
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'nginx'
     environment:
       name: nginx
     
@@ -51,7 +47,7 @@ jobs:
   renew-certificates:
     name: Renew SSL Certificates
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'certs'
     environment:
       name: certificates
     
@@ -70,7 +66,7 @@ jobs:
   deploy-dev-infra:
     name: Deploy DEV Infrastructure
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'dev-infra'
     environment:
       name: dev-infra
     
@@ -101,7 +97,7 @@ jobs:
   deploy-stage-infra:
     name: Deploy STAGE Infrastructure
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'stage-infra'
     environment:
       name: stage-infra
     
