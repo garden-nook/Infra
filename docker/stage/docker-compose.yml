@@ -1,0 +1,61 @@
+services:
+  stage-backend:
+    image: registry.codelab.tpu.ru/garden-nook/back:${IMAGE_TAG:-stage-latest}
+    container_name: stage-backend
+    restart: unless-stopped
+    environment:
+      - SERVER_PORT=8080
+      - DB_HOST=stage-db
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_SSLMODE=disable
+      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
+      - JWT_USER_TTL_MINUTES=${JWT_USER_TTL_MINUTES}
+      - JWT_ADMIN_TTL_MINUTES=${JWT_ADMIN_TTL_MINUTES}
+    depends_on:
+      stage-db:
+        condition: service_healthy
+    networks:
+      - stage-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  stage-db:
+    image: postgis/postgis:17-3.6-alpine
+    container_name: stage-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - /opt/garden-nook/stage/db-data:/var/lib/postgresql/data
+    networks:
+      - stage-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  stage-pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: stage-pgadmin
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+    volumes:
+      - /opt/garden-nook/stage/pgadmin-data:/var/lib/pgadmin
+    networks:
+      - stage-network
+
+networks:
+  stage-network:
+    name: stage-network
+    driver: bridge
