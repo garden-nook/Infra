@@ -79,7 +79,7 @@ jobs:
           username: ${{ vars.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            VPS_IP=${{ vars.VPS_HOST }} \
+            sudo VPS_IP=${{ vars.VPS_HOST }} \
             CERT_EMAIL=noreply@localhost.local \
             /opt/garden-nook/scripts/issue-certs.sh
 
