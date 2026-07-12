@@ -20,6 +20,26 @@ services:
       timeout: 10s
       retries: 3
 
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9443:9443"
+    volumes:
+      - portainer:/data
+      # Доступ к Docker socket для управления всеми контейнерами на хосте
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - dev-network
+      - stage-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 networks:
   dev-network:
     external: true
@@ -27,3 +47,6 @@ networks:
   stage-network:
     external: true
     name: stage-network
+
+volumes:
+  portainer:
