@@ -4,6 +4,8 @@ services:
     container_name: stage-backend
     restart: unless-stopped
     environment:
+      - SWAGGER_HOST=${SWAGGER_HOST}
+      - SWAGGER_SCHEMES=https
       - SERVER_PORT=8080
       - DB_HOST=stage-db
       - DB_PORT=5432
