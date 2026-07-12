@@ -17,6 +17,10 @@ STAGE_DOMAINS=(
   "pg.stage.${IP_DASHED}.nip.io"
 )
 
+GLOBAL_DOMAINS=(
+  "portainer.${IP_DASHED}.nip.io"
+)
+
 issue_cert() {
     local env_name="$1"
     shift
@@ -44,7 +48,9 @@ issue_cert() {
         --email "${EMAIL}" \
         --cert-name "garden-nook-${env_name}" \
         ${domain_args}
-    
+
+    mkdir -p "${cert_dir}"
+
     # Копируем сертификаты в директорию nginx
     # Используем -L чтобы получить сами файлы, а не симлинки
     cp -L /etc/letsencrypt/live/garden-nook-${env_name}/fullchain.pem "${cert_dir}/fullchain.pem"
@@ -76,6 +82,7 @@ fi
 
 issue_cert "dev" "${DEV_DOMAINS[@]}"
 issue_cert "stage" "${STAGE_DOMAINS[@]}"
+issue_cert "global" "${GLOBAL_DOMAINS[@]}"
 
 echo ""
 echo "Перезапускаем nginx..."
