@@ -1,6 +1,20 @@
 services:
+  dev-frontend:
+    image: elecshen/front:${FRONT_IMAGE_TAG:-dev-latest}
+    container_name: dev-frontend
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=https://api.dev.192-144-12-78.nip.io
+    networks:
+      - dev-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "--tries=1", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   dev-backend:
-    image: elecshen/back:${IMAGE_TAG:-dev-latest}
+    image: elecshen/back:${BACK_IMAGE_TAG:-dev-latest}
     container_name: dev-backend
     restart: unless-stopped
     environment:
