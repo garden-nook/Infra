@@ -8,7 +8,7 @@ services:
     networks:
       - stage-network
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "--tries=1", "http://localhost:80/health"]
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:80/health", "||", "exit", "1"]
       interval: 30s
       timeout: 5s
       retries: 3
